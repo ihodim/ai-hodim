@@ -54,13 +54,30 @@ Chat, club accounts and dashboard, bookings, discounts, QR check-in, finding str
 
 ## Stack
 
-**Not decided yet.** It depends on the hosting plan. Don't scaffold a framework until this section is filled in.
+**Decided (v1).** The phased plan is in [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
 
-- Web app, mobile-first (must work well in a phone browser; camera and GPS through the browser).
+- **Language:** TypeScript everywhere, in strict mode.
+- **Frontend:** React + Vite, as a mobile-first PWA. It must work well in a phone browser, with camera and GPS through the browser. All Bulgarian UI strings live in one i18n file.
+- **Backend:** Supabase in the EU (Frankfurt) region:
+  - Postgres for data
+  - Auth (Google + email)
+  - Storage for check-in photos
+  - Realtime for the live "who's coming" list
+- **Security:**
+  - Row Level Security is on for **every** table.
+  - "Friends only" and "hidden from specific friends" are enforced **in the database**, never only in the UI.
+  - 18+ is enforced in the database too, with a date-of-birth check, not only in the form.
+- **Check-in verification** runs server-side in a Supabase Edge Function: GPS distance to the venue, the time window, and a photo taken in-app. Never trust the client's verdict.
+- **Hosting:** the frontend is static files (host not chosen yet). The backend is Supabase.
+- **Tooling:**
+  - ESLint + Prettier
+  - Vitest for unit tests
+  - GitHub Actions runs typecheck, lint and tests on every PR
 
 ## Working rules
 
 - Never commit to `main`. Use one branch per feature (`feature/<name>`), and the other person merges the PR.
+- Every PR must pass CI before it is merged.
 - Start every session with `git switch main && git pull`.
 - Never commit secrets. Use `.env` (gitignored) and `.env.example` with empty values.
 - Location data and photos are personal data (GDPR). Store only what a feature needs, and delete what's expired.
