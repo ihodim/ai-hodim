@@ -2,6 +2,8 @@
 
 This plan is based only on the decisions in [CLAUDE.md](../CLAUDE.md). If the two disagree, CLAUDE.md wins. Nothing from its "Not in v1" list is in this plan: no chat, no club accounts, no bookings, no discounts, no QR check-in, no finding strangers, no public profiles and no native apps.
 
+> **Update:** the open questions now have answers or defaults in [DECISIONS.md](DECISIONS.md), and the exact interface the frozen spec tests check is in [CONTRACTS.md](CONTRACTS.md). Where this plan and CONTRACTS.md differ, CONTRACTS.md wins.
+
 Some details are marked **(proposed)**. This plan suggests them and CLAUDE.md does not decide them, so each one is listed again in [Open questions](#e-open-questions). Confirm or change it before the phase that needs it.
 
 **Contents:** [a) Data model](#a-data-model) · [b) Phases](#b-phases) · [c) Work split](#c-work-split) · [d) Risks](#d-risks) · [e) Open questions](#e-open-questions)

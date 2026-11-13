@@ -60,7 +60,7 @@ Chat, club accounts and dashboard, bookings, discounts, QR check-in, finding str
 - **Frontend:** React + Vite, as a mobile-first PWA. It must work well in a phone browser, with camera and GPS through the browser. All Bulgarian UI strings live in one i18n file.
 - **Backend:** Supabase in the EU (Frankfurt) region:
   - Postgres for data
-  - Auth (Google + email)
+  - Auth (Google + email magic link, no passwords; see DECISIONS Q5)
   - Storage for check-in photos
   - Realtime for the live "who's coming" list
 - **Security:**
@@ -71,12 +71,47 @@ Chat, club accounts and dashboard, bookings, discounts, QR check-in, finding str
 - **Hosting:** the frontend is static files (host not chosen yet). The backend is Supabase.
 - **Tooling:**
   - ESLint + Prettier
-  - Vitest for unit tests
-  - GitHub Actions runs typecheck, lint and tests on every PR
+  - Vitest for unit and integration tests, pgTAP (`supabase test db`) for database tests
+  - GitHub Actions runs typecheck, lint and the spec on every PR
+  - Node 22 (the spec runner needs Node 20.11 or newer)
+
+## Frozen spec (tests are written before the code)
+
+The tests below were written **before** any implementation. They define "done". You build code to pass them, and never change them to match the code.
+
+- **Spec files:**
+  - `supabase/tests/database/*.sql` (pgTAP)
+  - `tests/unit/*`
+  - `tests/integration/*`
+  - `tests/fixtures/*`
+  - `scripts/run-spec.mjs`
+  - `docs/CONTRACTS.md`
+  - `CURRENT_PHASE`
+  - `.claude/hooks/*` and `.claude/settings.json`
+  - `.github/workflows/spec-guard.yml`
+- **Never** edit, rename, delete or skip them:
+  - no `.skip`, `.only` or `todo`
+  - no config that excludes them
+  - no bumping `CURRENT_PHASE`
+
+  A hook blocks these edits. CI fails any PR that touches them without the `spec-change` label.
+- **Contracts:** implement names, signatures, error codes and paths **exactly** as in [docs/CONTRACTS.md](docs/CONTRACTS.md). Answers to the BUILD_PLAN open questions are in [docs/DECISIONS.md](docs/DECISIONS.md).
+- **Done for phase N** means all of these, with `CURRENT_PHASE` = N:
+  - `npm run test:spec` passes
+  - `npm run test:spec -- --integration` passes when the phase has integration specs
+  - typecheck and lint pass
+  - the developer has finished the manual phone checks from BUILD_PLAN "Done when"
+- **If you think a spec test or contract is wrong, stop and explain** which assertion and why. Don't work around it.
+- **Extra tests of your own are welcome** next to the code (`src/**/*.test.ts`), but never under `tests/` or `supabase/tests/`. They don't replace the spec.
+- **Every phase's prompt is in [docs/PHASE_PROMPTS.md](docs/PHASE_PROMPTS.md).**
+
+## Codebase map (graphify)
+
+If `graphify-out/GRAPH_REPORT.md` exists, read it before searching the codebase broadly, and use the graph instead of reading every file. It's generated locally and gitignored. At the end of each phase, remind the developer to rebuild it with `/graphify .`.
 
 ## Working rules
 
-- Never commit to `main`. Use one branch per feature (`feature/<name>`), and the other person merges the PR.
+- Never commit to `main`. Branch prefixes are `feature/`, `fix/`, `docs/`, `test/` and `chore/`. The other person merges the PR.
 - Every PR must pass CI before it is merged.
 - Start every session with `git switch main && git pull`.
 - Never commit secrets. Use `.env` (gitignored) and `.env.example` with empty values.
