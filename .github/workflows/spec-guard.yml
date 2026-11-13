@@ -1,0 +1,38 @@
+# Fails any PR that changes the frozen spec unless it carries the `spec-change` label.
+# Make this a required status check on `main` (Settings → Branches / Rulesets).
+name: spec-guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for frozen-spec changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'spec-change') }}
+        run: |
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          hits="$(printf '%s\n' "$changed" | grep -E '^(supabase/tests/|tests/|scripts/run-spec\.mjs$|docs/CONTRACTS\.md$|\.claude/hooks/|\.claude/settings\.json$|\.github/workflows/spec-guard\.yml$)' || true)"
+          if [ -z "$hits" ]; then
+            echo "No frozen spec files changed."
+            exit 0
+          fi
+          echo "This PR changes frozen spec files:"
+          printf '  %s\n' $hits
+          if [ "$HAS_LABEL" = "true" ]; then
+            echo "Label 'spec-change' present: allowed. Both developers must review these changes."
+            exit 0
+          fi
+          echo "::error::Frozen spec files changed without the 'spec-change' label. Tests must not be edited to make code pass."
+          exit 1

@@ -28,3 +28,9 @@ desktop.ini
 
 # Local Claude Code settings (personal, not shared)
 .claude/settings.local.json
+
+# Spec run output
+.spec-results/
+
+# graphify output (each developer regenerates it locally)
+graphify-out/
