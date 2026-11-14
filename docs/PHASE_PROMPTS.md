@@ -83,11 +83,27 @@ Plan first (plan mode), wait for my approval, then build:
    `npm run test:spec -- --integration`. Job name: `ci`.
 9. A throwaway /spike page (dev only) that opens the rear camera with getUserMedia and reads GPS with watchPosition,
    showing accuracy. I will test it on an iPhone and an Android phone, in the browser and as an installed PWA.
-10. Deploy the static build to our host: <WRITE YOUR HOST HERE>. Must be HTTPS.
-
-Definition of done: `npm run test:spec` passes (phase 0 = only 000/999 run), `npm run typecheck` and `npm run lint` pass,
-CI is green on the PR. Then commit on this branch, push, open a PR "Phase 0: project setup". Do not merge.
-```
+10. **Deploy config for Cloudflare Pages** (replaces the old Vercel step)
+    - Hosting is Cloudflare Pages, not Vercel. Vercel Hobby can't deploy
+      private GitHub org repos. Do NOT add vercel.json or any Vercel config.
+    - Build command: `npm run build`. Output directory: `dist`.
+    - Create `public/_redirects` with exactly one line:
+      `/* /index.html 200`
+      (SPA fallback so deep links like /plans/123 don't 404.)
+    - Add `.nvmrc` pinning the same Node major version the project uses
+      locally, so the Cloudflare build matches.
+    - The only env vars the frontend may read are `VITE_SUPABASE_URL` and
+      `VITE_SUPABASE_ANON_KEY`. Add both to `.env.example` with empty values.
+      Never reference the Supabase service-role key anywhere in frontend code.
+    - Do not connect the Cloudflare project yourself. A human (org owner)
+      connects ihodim/ai-hodim in the Cloudflare dashboard with the settings
+      above and adds the two env vars there.
+    - Done when: the PR's Cloudflare preview URL loads and shows the
+      Bulgarian app title, and a hard refresh on a non-root route still loads
+      the app.
+    - Update `docs/DECISIONS.md` Q1: hosting = Cloudflare Pages, with the
+      reason (Vercel Hobby can't deploy private org repos, and its plan is
+      non-commercial only).
 
 **Phone check:** the spike page on both phones. Write the results (camera and GPS, browser vs installed PWA) into the PR description.
 
