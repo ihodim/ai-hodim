@@ -13,8 +13,6 @@ const PROTECTED = [
   '.claude/hooks/',
   '.claude/settings.json',
   '.github/workflows/spec-guard.yml',
-    '.github/workflows/spec-guard.yml',
-  '.github/workflows/main-audit.yml',
   '.githooks/',
   '.gitattributes',
 ];
