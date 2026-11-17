@@ -4,10 +4,11 @@
 
 - **Default**: chosen so the tests could be written. **The tests encode it.** To change it, update this file, CONTRACTS.md and the affected tests in a `spec-change` PR that both of you approve.
 - **Open**: not decided yet, and no test depends on it. It must be answered before the phase listed.
+- **Decided**: settled by both of you, and no test depends on it. Change it with a normal PR that both of you approve.
 
 | Q | Topic | Status | Answer | Tests |
 |---|---|---|---|---|
-| 1 | Static host | **Open** (before Phase 0 deploy) | Must serve HTTPS. If it's Hostinger, use the `hostinger:hosting-deploy-static-site` skill. | — |
+| 1 | Static host | **Decided** (Phase 0) | **Cloudflare Pages**, connected to the GitHub repo: production branch `main`, a preview deployment for every branch, build `npm run build`, output `dist`, Node 22 from `.nvmrc`. The only env vars are `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. `public/_redirects` serves `index.html` for every path, so deep links don't 404. **Why not Vercel:** Vercel Hobby can't deploy private GitHub org repos, and the Hobby plan is for non-commercial use only. | — |
 | 2 | Supabase plan and budget | **Open** (before Phase 8) | Free tier while building. | — |
 | 3 | Username rules | Default | 3–20 characters. Must start with a Latin letter. Only `A–Z a–z 0–9 _ .` are allowed. Matching is case-insensitive (`Ivan` = `ivan`). The owner can change it later. | 010, phase1-username |
 | 4 | Correcting date of birth | Default | Clients can't change it. An admin fixes it by hand with SQL if a user asks. | 010 |
