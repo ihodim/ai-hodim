@@ -13,6 +13,8 @@ const PROTECTED = [
   '.claude/hooks/',
   '.claude/settings.json',
   '.github/workflows/spec-guard.yml',
+  '.githooks/',
+  '.gitattributes',
 ];
 
 let input = {};

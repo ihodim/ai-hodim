@@ -1,5 +1,5 @@
-# Fails any PR that changes the frozen spec unless it carries the `spec-change` label.
-# Make this a required status check on `main` (Settings → Branches / Rulesets).
+# Fails any PR that changes the frozen spec unless it carries the `spec-change` label,
+# and any PR that lowers CURRENT_PHASE or raises it by more than 1.
 name: spec-guard
 
 on:
@@ -10,12 +10,23 @@ permissions:
   contents: read
 
 jobs:
-  guard:
+  spec-guard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: CURRENT_PHASE may only stay or go up by 1
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          base="$(git show "$BASE_SHA:CURRENT_PHASE" | tr -d '[:space:]')"
+          head="$(git show "$HEAD_SHA:CURRENT_PHASE" | tr -d '[:space:]')"
+          case "$base$head" in ''|*[!0-9]*) echo "::error::CURRENT_PHASE must be a whole number (base '$base', head '$head')"; exit 1;; esac
+          if [ "$head" -lt "$base" ] || [ "$head" -gt $((base + 1)) ]; then
+            echo "::error::CURRENT_PHASE went from $base to $head. It may only stay the same or go up by 1."; exit 1
+          fi
       - name: Check for frozen-spec changes
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -23,7 +34,7 @@ jobs:
           HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'spec-change') }}
         run: |
           changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
-          hits="$(printf '%s\n' "$changed" | grep -E '^(supabase/tests/|tests/|scripts/run-spec\.mjs$|docs/CONTRACTS\.md$|\.claude/hooks/|\.claude/settings\.json$|\.github/workflows/spec-guard\.yml$)' || true)"
+          hits="$(printf '%s\n' "$changed" | grep -E '^(supabase/tests/|tests/|scripts/run-spec\.mjs$|docs/CONTRACTS\.md$|\.claude/hooks/|\.claude/settings\.json$|\.github/workflows/(spec-guard|main-audit)\.yml$|\.githooks/|\.gitattributes$)' || true)"
           if [ -z "$hits" ]; then
             echo "No frozen spec files changed."
             exit 0
