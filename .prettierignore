@@ -1,0 +1,21 @@
+# Frozen spec: never reformat (spec-guard fails any PR that touches these without the spec-change label)
+tests/
+supabase/tests/
+scripts/run-spec.mjs
+docs/CONTRACTS.md
+CURRENT_PHASE
+.claude/
+.github/workflows/spec-guard.yml
+
+# Generated / build output
+src/lib/database.types.ts
+dist/
+coverage/
+.spec-results/
+supabase/.temp/
+.wrangler/
+package-lock.json
+skills-lock.json
+
+# Docs are hand-formatted
+*.md

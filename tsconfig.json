@@ -1,0 +1,29 @@
+{
+  // App code (browser). Checked by `npm run typecheck` and `npm run build`.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "noEmit": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true
+  },
+  // TODO: include tests/ once the src modules they import exist (Phase 1+).
+  // Frozen specs for later phases import modules that don't exist yet (e.g. src/lib/age), so tsc would
+  // fail today. Vitest still runs them (without type checking) when their phase comes.
+  "include": ["src"]
+}

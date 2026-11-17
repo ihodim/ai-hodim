@@ -68,7 +68,7 @@ Chat, club accounts and dashboard, bookings, discounts, QR check-in, finding str
   - "Friends only" and "hidden from specific friends" are enforced **in the database**, never only in the UI.
   - 18+ is enforced in the database too, with a date-of-birth check, not only in the form.
 - **Check-in verification** runs server-side in a Supabase Edge Function: GPS distance to the venue, the time window, and a photo taken in-app. Never trust the client's verdict.
-- **Hosting:** the frontend is static files (host not chosen yet). The backend is Supabase.
+- **Hosting:** the frontend is static files on **Cloudflare Workers** (static assets, `wrangler.jsonc`; see DECISIONS Q1). The backend is Supabase.
 - **Tooling:**
   - ESLint + Prettier
   - Vitest for unit and integration tests, pgTAP (`supabase test db`) for database tests
