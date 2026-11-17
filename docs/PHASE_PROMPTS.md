@@ -83,27 +83,40 @@ Plan first (plan mode), wait for my approval, then build:
    `npm run test:spec -- --integration`. Job name: `ci`.
 9. A throwaway /spike page (dev only) that opens the rear camera with getUserMedia and reads GPS with watchPosition,
    showing accuracy. I will test it on an iPhone and an Android phone, in the browser and as an installed PWA.
-10. **Deploy config for Cloudflare Pages** (replaces the old Vercel step)
-    - Hosting is Cloudflare Pages, not Vercel. Vercel Hobby can't deploy
-      private GitHub org repos. Do NOT add vercel.json or any Vercel config.
-    - Build command: `npm run build`. Output directory: `dist`.
-    - Create `public/_redirects` with exactly one line:
-      `/* /index.html 200`
-      (SPA fallback so deep links like /plans/123 don't 404.)
+10. **Deploy config for Cloudflare Workers with static assets** (replaces the old Vercel and Pages steps)
+    - Hosting is Cloudflare Workers (static assets, deployed by Workers Builds), not Pages and not
+      Vercel. Vercel Hobby can't deploy private GitHub org repos. Do NOT add vercel.json or any
+      Vercel config, and no Pages `_redirects` file.
+    - Check every Wrangler key and Workers Builds variable against Cloudflare's current docs, not memory.
+    - Add `wrangler` as a pinned devDependency (Workers Builds uses the package.json version; Worker
+      Previews needs >= 4.135.0).
+    - Create `wrangler.jsonc`:
+      - `name` exactly matching the Worker's name in the dashboard (`ai-hodim`), or builds fail
+      - a `compatibility_date`
+      - `assets.directory`: `./dist`
+      - `assets.not_found_handling`: `"single-page-application"`
+        (SPA fallback so deep links like /plans/123 serve index.html instead of 404)
+      - `preview_urls: true` and an empty `previews` block (required by `wrangler preview`)
+    - Build command: `npm run build`. Deploy command (production): `npx wrangler deploy`.
+      Preview command (other branches): `npx wrangler preview`.
+    - The /spike page is built only when `mode === 'development' || (WORKERS_CI === '1' &&
+      WORKERS_CI_BRANCH !== 'main')`, i.e. in dev and Workers preview builds. A plain
+      `npm run build` must contain no spike chunk.
     - Add `.nvmrc` pinning the same Node major version the project uses
-      locally, so the Cloudflare build matches.
+      locally, so the Cloudflare build matches (Workers Builds defaults to Node 24 otherwise).
     - The only env vars the frontend may read are `VITE_SUPABASE_URL` and
       `VITE_SUPABASE_ANON_KEY`. Add both to `.env.example` with empty values.
       Never reference the Supabase service-role key anywhere in frontend code.
-    - Do not connect the Cloudflare project yourself. A human (org owner)
-      connects ihodim/ai-hodim in the Cloudflare dashboard with the settings
-      above and adds the two env vars there.
-    - Done when: the PR's Cloudflare preview URL loads and shows the
+    - Do not connect or configure the Cloudflare Worker yourself. A human (org owner) connects
+      ihodim/ai-hodim in Workers Builds with the settings above: production branch `main`,
+      preview builds on, and the two VITE_ vars as **build** variables (Vite reads them at build
+      time) for both production and Preview builds.
+    - Done when: the PR's Workers Preview URL loads and shows the
       Bulgarian app title, and a hard refresh on a non-root route still loads
       the app.
-    - Update `docs/DECISIONS.md` Q1: hosting = Cloudflare Pages, with the
-      reason (Vercel Hobby can't deploy private org repos, and its plan is
-      non-commercial only).
+    - Update `docs/DECISIONS.md` Q1: hosting = Cloudflare Workers with static assets, with the
+      reasons (Cloudflare's recommended path for new projects; Vercel Hobby can't deploy private
+      org repos, and its plan is non-commercial only).
 
 **Phone check:** the spike page on both phones. Write the results (camera and GPS, browser vs installed PWA) into the PR description.
 
