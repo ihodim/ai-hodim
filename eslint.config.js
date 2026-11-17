@@ -19,6 +19,7 @@ export default defineConfig([
     'coverage/',
     '.spec-results/',
     'supabase/.temp/',
+    '.wrangler/',
   ]),
   {
     files: ['**/*.{ts,tsx}'],

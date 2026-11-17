@@ -19,7 +19,7 @@ export function App() {
           }
         />
       )}
-      {/* Catch-all: every deep link loads the app shell (Cloudflare serves index.html via _redirects). */}
+      {/* Catch-all: every deep link loads the app shell (Cloudflare serves index.html via SPA mode in wrangler.jsonc). */}
       <Route path="*" element={<Home />} />
     </Routes>
   );

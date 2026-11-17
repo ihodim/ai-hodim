@@ -1,0 +1,18 @@
+// Cloudflare Workers with static assets (DECISIONS Q1). Assets-only: there is no Worker script.
+// Workers Builds runs `npm run build`, then `npx wrangler deploy` (main) or `npx wrangler preview` (other branches).
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Must match the Worker's name in the Cloudflare dashboard, or Workers Builds fails.
+  "name": "ai-hodim",
+  "compatibility_date": "2026-11-17",
+  "assets": {
+    "directory": "./dist",
+    // SPA routing: any path that isn't a file (e.g. /plans/123) is served /index.html with 200.
+    "not_found_handling": "single-page-application",
+  },
+  // workers.dev Preview URLs for non-production branches (phone tests run on these).
+  "preview_urls": true,
+  // Worker Previews settings. Required by `wrangler preview`, empty because the app has no
+  // runtime bindings: the two VITE_ vars are build variables, baked in by Vite at build time.
+  "previews": {},
+}

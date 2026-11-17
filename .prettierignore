@@ -13,6 +13,7 @@ dist/
 coverage/
 .spec-results/
 supabase/.temp/
+.wrangler/
 package-lock.json
 skills-lock.json
 

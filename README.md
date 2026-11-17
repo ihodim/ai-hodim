@@ -5,7 +5,7 @@ A social web app for nights out. Friends say where they're going ("Friday, Club 
 Launching first in **Blagoevgrad** with AUBG students and 5–6 local clubs.
 
 - Product decisions and rules for contributors (and for Claude Code): see [CLAUDE.md](CLAUDE.md)
-- Stack: React + Vite PWA (TypeScript), Supabase (EU), hosted on Cloudflare Pages. Build plan: [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)
+- Stack: React + Vite PWA (TypeScript), Supabase (EU), hosted on Cloudflare Workers (static assets, see `wrangler.jsonc`). Build plan: [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)
 
 ## Quickstart (fresh clone)
 
@@ -17,7 +17,7 @@ You need:
 ```
 cp .env.example .env          # fill in the Supabase URL and anon key (never the service-role key)
 npm install
-npm run dev                   # the app; /spike is the phone camera + GPS test (dev and preview builds only)
+npm run dev                   # the app; /spike is the phone camera + GPS test (dev and Workers preview builds only)
 ```
 
 Database and spec:
@@ -30,6 +30,8 @@ npm run test:spec -- --integration
 ```
 
 Other scripts: `npm run typecheck`, `npm run lint`, `npm run format`, `npm test` (our own tests in `src/`), `npm run build`, `npm run preview`.
+
+Deploys happen on Cloudflare (Workers Builds): pushes to `main` go to production, every other branch gets a Preview URL. To serve the built app locally exactly as Cloudflare does (SPA routing included): `npm run build && npx wrangler dev`.
 
 ## Working on this repo
 
