@@ -10,7 +10,9 @@
     "noEmit": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "allowImportingTsExtensions": false,
+    // true so src can import supabase/functions/_shared/*.ts, which use .ts specifiers because Deno requires them.
+    // Allowed because noEmit is on.
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
 

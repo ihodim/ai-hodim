@@ -35,7 +35,35 @@ jobs:
       - name: Start local Supabase
         run: npx supabase start -x studio,imgproxy
 
-      # supabase functions serve is added in the phase that creates the first Edge Function.
+      # Serve Edge Functions only when a function folder other than _shared exists, and wait until it answers.
+      - name: Serve Edge Functions
+        run: |
+          shopt -s nullglob
+          fns=()
+          for d in supabase/functions/*/; do
+            name=$(basename "$d")
+            [ "$name" != "_shared" ] && fns+=("$name")
+          done
+          if [ ${#fns[@]} -eq 0 ]; then
+            echo "No Edge Functions yet"
+            exit 0
+          fi
+          nohup npx supabase functions serve > functions.log 2>&1 &
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS "http://127.0.0.1:54321/functions/v1/${fns[0]}" || true)
+            if [ "$code" = "200" ]; then
+              echo "Edge Functions are up (${fns[*]})"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Edge Functions did not start"
+          cat functions.log
+          exit 1
 
       - name: Frozen spec (database, unit, integration)
         run: npm run test:spec -- --integration
+
+      - name: Edge Function logs (on failure)
+        if: failure()
+        run: cat functions.log || true

@@ -23,16 +23,58 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            [_ in never]: never
+            "profile_private": {
+                  Row: {
+                    "date_of_birth": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "date_of_birth": string,"user_id": string
+                  }
+                  Update: {
+                    "date_of_birth"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profile_private_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "created_at": string,"id": string,"is_admin": boolean,"stats_visibility": Database["public"]['Enums']["stats_visibility"],"username": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id": string,"is_admin"?: boolean,"stats_visibility"?: Database["public"]['Enums']["stats_visibility"],"username": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"is_admin"?: boolean,"stats_visibility"?: Database["public"]['Enums']["stats_visibility"],"username"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "create_signup_rows":
+{ Args: { "p_dob": string,"p_user_id": string,"p_username": string }; Returns: undefined
+                           },
+"is_admin":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_member":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           }
           }
           Enums: {
-            [_ in never]: never
+            "stats_visibility": "friends"|"hidden"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -152,7 +194,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            
+            "stats_visibility": ["friends", "hidden"]
           }
         }
 } as const
