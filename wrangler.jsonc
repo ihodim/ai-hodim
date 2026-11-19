@@ -5,6 +5,11 @@
   // Must match the Worker's name in the Cloudflare dashboard, or Workers Builds fails.
   "name": "ai-hodim",
   "compatibility_date": "2026-11-17",
+  // Wrangler runs this before deploy/preview, so ./dist exists even when the Workers Builds
+  // dashboard has no build command set.
+  "build": {
+    "command": "npm run build",
+  },
   "assets": {
     "directory": "./dist",
     // SPA routing: any path that isn't a file (e.g. /plans/123) is served /index.html with 200.
