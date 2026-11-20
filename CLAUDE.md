@@ -105,6 +105,26 @@ The tests below were written **before** any implementation. They define "done". 
 - **Extra tests of your own are welcome** next to the code (`src/**/*.test.ts`), but never under `tests/` or `supabase/tests/`. They don't replace the spec.
 - **Every phase's prompt is in [docs/PHASE_PROMPTS.md](docs/PHASE_PROMPTS.md).**
 
+## Phase autopilot
+
+When a developer gives Claude a phase prompt from [docs/PHASE_PROMPTS.md](docs/PHASE_PROMPTS.md), that counts as approval for the whole phase. Claude runs it to the end in one go and doesn't stop to ask before any of these:
+
+- `git switch main && git pull`, create the phase branch, commit, push, open or update the PR, add labels, and request the other developer's review.
+- Implement test-first until `npm run test:spec` (plus `--integration` when the phase has integration specs), typecheck and lint pass.
+- Apply migrations and deploy Edge Functions to the Supabase project while it has no real users, and set any Supabase or Cloudflare config the phase needs.
+- Fix CI until every required check is green, then check the preview deploy in a browser.
+- The board review at the start of a phase runs without pausing for the developer. Its gates pause only for the stop list below.
+
+Claude stops and asks only for:
+
+1. The manual phone checks from BUILD_PLAN "Done when" (they need a person with a phone).
+2. Merging to `main`. The other developer merges.
+3. Bumping `CURRENT_PHASE` or any other spec-file change. The hook blocks these, and they need the `spec-change` label.
+4. A login or credential Claude doesn't have.
+5. Anything destructive or irreversible: deleting data, force-push or history rewrite, real secrets in a commit, or touching data that belongs to real users.
+
+At the end, Claude reports once: the PR link, check results, the preview URL, and the phone checks that are left.
+
 ## Codebase map (graphify)
 
 If `graphify-out/GRAPH_REPORT.md` exists, read it before searching the codebase broadly, and use the graph instead of reading every file. It's generated locally and gitignored. At the end of each phase, remind the developer to rebuild it with `/graphify .`.
