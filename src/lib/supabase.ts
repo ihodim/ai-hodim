@@ -13,3 +13,9 @@ if (!url || !anonKey) {
 /** null until .env is filled in, so a fresh clone still starts with `npm run dev`. */
 export const supabase: SupabaseClient<Database> | null =
   url && anonKey ? createClient<Database>(url, anonKey) : null;
+
+/** For screens that only render inside <AuthProvider>, which App mounts only when the client exists. */
+export function getClient(): SupabaseClient<Database> {
+  if (!supabase) throw new Error('Supabase is not configured');
+  return supabase;
+}

@@ -4,8 +4,11 @@ import { AuthProvider } from './components/AuthProvider';
 import { bg } from './i18n/bg';
 import { useAuth } from './lib/auth-context';
 import { supabase } from './lib/supabase';
+import { Friends } from './pages/Friends';
 import { Home } from './pages/Home';
 import { Onboarding } from './pages/Onboarding';
+import { Profile } from './pages/Profile';
+import { Settings } from './pages/Settings';
 import { SignIn } from './pages/SignIn';
 
 // The spike is a throwaway phone test. When __SPIKE__ is false (production and plain local/CI builds),
@@ -19,7 +22,14 @@ function Gate() {
   if (loading) return <main className="splash" aria-busy="true" />;
   if (!session) return <SignIn />;
   if (!profile) return <Onboarding />;
-  return <Home />;
+  return (
+    <Routes>
+      <Route path="/friends" element={<Friends />} />
+      <Route path="/u/:username" element={<Profile />} />
+      <Route path="/settings" element={<Settings />} />
+      <Route path="*" element={<Home />} />
+    </Routes>
+  );
 }
 
 export function App() {
