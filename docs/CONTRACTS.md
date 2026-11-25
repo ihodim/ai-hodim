@@ -61,13 +61,13 @@ Age is checked against today's date in **UTC** (Q6).
 
 ## Phase 2: friends
 
-`friendships(requester_id uuid → profiles on delete cascade, addressee_id uuid → profiles on delete cascade, status friendship_status not null, created_at, updated_at)`
+`friendships(requester_id uuid → profiles on delete cascade, addressee_id uuid → profiles on delete cascade, status friendship_status not null, mutual_block boolean not null default false, created_at, updated_at)`
 
 - `friendship_status` is an enum: `'pending' | 'accepted' | 'blocked'`.
 - There's a unique index on `(least(requester_id, addressee_id), greatest(requester_id, addressee_id))`, and a CHECK `requester_id <> addressee_id`.
-- For `blocked`, `requester_id` is the blocker.
+- For `blocked`, `requester_id` is the user whose block came first. `mutual_block = true` means the addressee has blocked back. A CHECK (SQLSTATE `23514`) allows `mutual_block = true` only when `status = 'blocked'`.
 - Clients can't insert, update or delete rows directly. All writes go through the RPCs.
-- Read: both users see `pending` and `accepted` rows. Only the blocker sees a `blocked` row.
+- Read: both users see `pending` and `accepted` rows. **No client sees a `blocked` row**, not even a blocker. A user's own blocks come from `list_blocked()`. This way a blocked user can't tell they're blocked, and someone who blocks back can't tell they were blocked first (Q12).
 
 ### Functions
 | Signature | Notes |
@@ -78,8 +78,9 @@ Age is checked against today's date in **UTC** (Q6).
 | `accept_request(p_requester uuid) returns void` | Caller must be the addressee of a `pending` row from `p_requester`, else `P0001`. |
 | `decline_request(p_requester uuid) returns void` | Deletes that pending row. |
 | `unfriend(p_friend uuid) returns void` | Deletes the accepted row. |
-| `block_user(p_target uuid) returns void` | Replaces any row with `caller → target, blocked`. |
-| `unblock_user(p_target uuid) returns void` | Only the blocker. Deletes the row. |
+| `block_user(p_target uuid) returns void` | Ends any pending or accepted row and records the caller's block on the target. If the target already blocked the caller, both blocks are kept (`mutual_block = true`) and the call succeeds as usual. Blocking someone you already block changes nothing. |
+| `unblock_user(p_target uuid) returns void` | Lifts only the caller's own block. If the other user also blocks, their block stays. The row is deleted once no block is left. A caller who doesn't block the target gets `P0001`, the same as when no row exists. |
+| `list_blocked() returns table(id uuid, username citext)` | The users the caller currently blocks, including someone the caller blocked back. |
 
 ## Phase 3: venues and events
 
