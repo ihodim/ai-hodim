@@ -71,8 +71,11 @@ describe('relationTo', () => {
     expect(relationTo(rows, ME, 'z')).toBe('none');
   });
 
-  it('shows my own block, and never a block against me', () => {
-    expect(relationTo([row(ME, 'a', 'blocked')], ME, 'a')).toBe('blocked');
+  it('takes my blocks from list_blocked ids, and never shows a block against me', () => {
+    expect(relationTo([], ME, 'a', new Set(['a']))).toBe('blocked');
+    expect(relationTo([row('a', ME, 'accepted')], ME, 'a', new Set(['a']))).toBe('blocked');
+    // A blocked row (if one ever reached the client) never reveals who blocked whom.
+    expect(relationTo([row(ME, 'a', 'blocked')], ME, 'a')).toBe('none');
     expect(relationTo([row('a', ME, 'blocked')], ME, 'a')).toBe('none');
   });
 });

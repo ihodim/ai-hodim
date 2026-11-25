@@ -59,17 +59,23 @@ export function groupFriendships(rows: readonly FriendshipRow[], myId: string): 
   return groups;
 }
 
-/** How I relate to another user, from my own friendship rows. */
-export function relationTo(rows: readonly FriendshipRow[], myId: string, otherId: string): Relation {
+/** How I relate to another user. Blocked rows are invisible to clients, so "I block them" comes from my
+ *  list_blocked() ids; a block against me is never visible and reads as 'none' (Q12). */
+export function relationTo(
+  rows: readonly FriendshipRow[],
+  myId: string,
+  otherId: string,
+  blockedIds: ReadonlySet<string> = new Set(),
+): Relation {
   if (otherId === myId) return 'self';
+  if (blockedIds.has(otherId)) return 'blocked';
   const row = rows.find(
     (r) =>
       (r.requester_id === myId && r.addressee_id === otherId) ||
       (r.requester_id === otherId && r.addressee_id === myId),
   );
-  if (!row) return 'none';
+  if (!row || row.status === 'blocked') return 'none';
   if (row.status === 'accepted') return 'friends';
-  if (row.status === 'blocked') return row.requester_id === myId ? 'blocked' : 'none';
   return row.requester_id === myId ? 'outgoing' : 'incoming';
 }
 

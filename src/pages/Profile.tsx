@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ConfirmAction, Screen } from '../components/Screen';
 import { bg } from '../i18n/bg';
@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth-context';
 import {
   findUser,
   friendAction,
+  listBlocked,
   relationTo,
   type FriendAction,
   type FriendErrorCode,
@@ -25,8 +26,18 @@ export function Profile() {
   const { rows, reload } = useFriendships();
 
   const [lookup, setLookup] = useState<Lookup | null>(null);
+  const [blockedIds, setBlockedIds] = useState<ReadonlySet<string> | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<FriendErrorCode | null>(null);
+
+  // Blocked rows are invisible to clients; my own blocks come from list_blocked().
+  const reloadBlocked = useCallback(async () => {
+    try {
+      setBlockedIds(new Set((await listBlocked(getClient())).map((p) => p.id)));
+    } catch {
+      setBlockedIds(new Set());
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -34,10 +45,12 @@ export function Profile() {
       (person) => active && setLookup({ username, person }),
       () => active && setLookup({ username, person: 'error' }),
     );
+    const timer = setTimeout(() => void reloadBlocked(), 0);
     return () => {
       active = false;
+      clearTimeout(timer);
     };
-  }, [username]);
+  }, [username, reloadBlocked]);
 
   const current = lookup?.username === username ? lookup.person : undefined;
   // After I block someone, search no longer returns them, but the page keeps the person it already loaded.
@@ -49,11 +62,11 @@ export function Profile() {
     setError(null);
     const code = await friendAction(getClient(), action, person.id);
     if (code) setError(code);
-    await reload();
+    await Promise.all([reload(), reloadBlocked()]);
     setBusy(false);
   }
 
-  const relation = person && rows ? relationTo(rows, myId, person.id) : null;
+  const relation = person && rows && blockedIds ? relationTo(rows, myId, person.id, blockedIds) : null;
 
   return (
     <Screen title={person ? `@${person.username}` : `@${username}`}>
