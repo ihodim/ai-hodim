@@ -647,3 +647,62 @@ a.person-name {
     animation: none;
   }
 }
+
+/* ---------- Venues and events ---------- */
+
+.venue-row {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.venue-address {
+  margin: 0;
+  color: var(--haze);
+  font-size: 0.9375rem;
+}
+
+.event {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.event .link-button {
+  justify-self: start;
+}
+
+.event-time {
+  color: var(--lamp);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.event-promo {
+  margin: 0;
+  color: var(--haze);
+  font-size: 0.9375rem;
+}
+
+.form {
+  padding-left: 0;
+}
+
+/* Two fields side by side (check-in window). */
+.row-split > * {
+  flex: 1 1 8rem;
+}
+
+textarea.input {
+  padding: 0.75rem 1rem;
+  resize: vertical;
+}
+
+.input[type='time'],
+.input[type='datetime-local'] {
+  color-scheme: dark;
+}

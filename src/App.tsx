@@ -5,11 +5,15 @@ import { bg } from './i18n/bg';
 import { useAuth } from './lib/auth-context';
 import { supabase } from './lib/supabase';
 import { Friends } from './pages/Friends';
+import { EventForm } from './pages/EventForm';
 import { Home } from './pages/Home';
 import { Onboarding } from './pages/Onboarding';
 import { Profile } from './pages/Profile';
 import { Settings } from './pages/Settings';
 import { SignIn } from './pages/SignIn';
+import { Venue } from './pages/Venue';
+import { VenueForm } from './pages/VenueForm';
+import { Venues } from './pages/Venues';
 
 // The spike is a throwaway phone test. When __SPIKE__ is false (production and plain local/CI builds),
 // this branch is constant-folded away and the Spike chunk is never emitted.
@@ -27,6 +31,17 @@ function Gate() {
       <Route path="/friends" element={<Friends />} />
       <Route path="/u/:username" element={<Profile />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/venues" element={<Venues />} />
+      <Route path="/venues/:id" element={<Venue />} />
+      {/* Admin screens exist only for admins; for anyone else these URLs fall through to home. */}
+      {profile.isAdmin && (
+        <>
+          <Route path="/venues/new" element={<VenueForm />} />
+          <Route path="/venues/:id/edit" element={<VenueForm />} />
+          <Route path="/venues/:venueId/events/new" element={<EventForm />} />
+          <Route path="/events/:id/edit" element={<EventForm />} />
+        </>
+      )}
       <Route path="*" element={<Home />} />
     </Routes>
   );
