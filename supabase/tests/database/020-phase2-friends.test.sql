@@ -1,6 +1,6 @@
 -- FROZEN SPEC FILE. Phase 2: friends and blocking. See docs/CONTRACTS.md "Phase 2".
 begin;
-select plan(46);
+select plan(74);
 
 -- Structure -------------------------------------------------------------------
 select ok(coalesce((select relrowsecurity from pg_class where oid = to_regclass('public.friendships')), false),
@@ -88,7 +88,8 @@ insert into friendships (requester_id, addressee_id, status) values (tests.uid('
 select tests.authenticate_as('alice');
 select lives_ok($$ select block_user(tests.uid('bob')) $$, 'alice blocks her friend bob');
 select is((select count(*)::int from find_user_by_username('bob')), 0, 'the blocker cannot find the blocked user');
-select is((select count(*)::int from friendships where status = 'blocked'), 1, 'the blocker sees the block row');
+select is((select count(*)::int from friendships where status = 'blocked'), 0, 'not even the blocker sees a block row');
+select is((select array_agg(username::text) from list_blocked()), array['bob'], 'the blocker sees the block in list_blocked');
 reset role;
 select ok(not are_friends(tests.uid('alice'), tests.uid('bob')), 'blocking ends the friendship');
 
@@ -115,6 +116,79 @@ select tests.attempt($$ select send_friend_request(tests.uid('dave')) $$);
 reset role;
 select is((select count(*)::int from friendships where tests.uid('dave') in (requester_id, addressee_id)), 0,
   'a signed-in user without a profile cannot send requests');
+
+-- Blocking back (both users block each other) ---------------------------------------
+-- A block lasts until its own blocker lifts it. Blocking back must not hand the first block over to the other
+-- user, and neither user may be able to tell whose block came first (Q12).
+
+-- A) the blocked user blocks back, then unblocks: the first block stays.
+select tests.authenticate_as('alice');
+select lives_ok($$ select block_user(tests.uid('dave')) $$, 'alice blocks dave');
+select tests.authenticate_as('dave');
+select lives_ok($$ select block_user(tests.uid('alice')) $$, 'dave blocks alice back');
+select is((select count(*)::int from friendships), 0, 'after blocking back dave sees no friendship rows');
+select is((select array_agg(username::text) from list_blocked()), array['alice'],
+  'dave''s list_blocked shows alice, as for any block');
+select lives_ok($$ select unblock_user(tests.uid('alice')) $$, 'dave lifts his own block');
+reset role;
+select is((select count(*)::int from friendships
+           where requester_id = tests.uid('alice') and addressee_id = tests.uid('dave')
+             and status = 'blocked' and not mutual_block), 1,
+  'alice''s block survives dave blocking back and unblocking');
+select tests.authenticate_as('dave');
+select is((select count(*)::int from find_user_by_username('alice')), 0, 'dave still cannot find alice');
+select throws_ok($$ select send_friend_request(tests.uid('alice')) $$, 'P0001', null,
+  'dave still cannot send alice a request');
+select tests.authenticate_as('alice');
+select lives_ok($$ select unblock_user(tests.uid('dave')) $$, 'alice lifts her block');
+reset role;
+select is((select count(*)::int from friendships where tests.uid('dave') in (requester_id, addressee_id)), 0,
+  'with no block left the row is gone');
+
+-- B) the first blocker unblocks: the second block stays.
+select tests.authenticate_as('alice');
+select lives_ok($$ select block_user(tests.uid('dave')) $$, 'alice blocks dave again');
+select tests.authenticate_as('dave');
+select lives_ok($$ select block_user(tests.uid('alice')) $$, 'dave blocks alice back again');
+select tests.authenticate_as('alice');
+select is((select count(*)::int from friendships where tests.uid('dave') in (requester_id, addressee_id)), 0,
+  'alice sees no row for the pair either');
+select lives_ok($$ select unblock_user(tests.uid('dave')) $$, 'alice lifts her block first');
+reset role;
+select is((select count(*)::int from friendships
+           where requester_id = tests.uid('dave') and addressee_id = tests.uid('alice')
+             and status = 'blocked' and not mutual_block), 1,
+  'dave''s block remains as a one-way block');
+select tests.authenticate_as('alice');
+select is((select count(*)::int from friendships where tests.uid('dave') in (requester_id, addressee_id)), 0,
+  'alice still sees no row for the pair');
+select is((select count(*)::int from list_blocked()), 0, 'alice''s list_blocked is now empty');
+select is((select count(*)::int from find_user_by_username('dave')), 0, 'dave''s block still hides him from alice');
+select throws_ok($$ select send_friend_request(tests.uid('dave')) $$, 'P0001', null,
+  'alice cannot send dave a request while his block stands');
+select tests.authenticate_as('dave');
+select is((select array_agg(username::text) from list_blocked()), array['alice'], 'dave still lists alice as blocked');
+select lives_ok($$ select unblock_user(tests.uid('alice')) $$, 'dave lifts his block');
+reset role;
+select is((select count(*)::int from friendships where tests.uid('dave') in (requester_id, addressee_id)), 0,
+  'after both unblock the row is gone');
+
+-- Edge cases ------------------------------------------------------------------------------
+select tests.authenticate_as('alice');
+select lives_ok($$ select block_user(tests.uid('dave')) $$, 'alice blocks dave');
+select lives_ok($$ select block_user(tests.uid('dave')) $$, 'blocking someone you already block succeeds');
+reset role;
+select is((select count(*)::int from friendships
+           where requester_id = tests.uid('alice') and addressee_id = tests.uid('dave')
+             and status = 'blocked' and not mutual_block), 1,
+  'a second block changes nothing');
+select tests.authenticate_as('dave');
+select throws_ok($$ select unblock_user(tests.uid('alice')) $$, 'P0001', null,
+  'the blocked user cannot lift a one-way block');
+reset role;
+select throws_ok($$ update friendships set mutual_block = true
+                    where requester_id = tests.uid('alice') and addressee_id = tests.uid('carol') $$,
+  '23514', null, 'mutual_block is only allowed on a blocked row');
 
 select * from finish();
 rollback;
