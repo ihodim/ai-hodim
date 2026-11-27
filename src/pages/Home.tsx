@@ -35,6 +35,9 @@ export function Home() {
               </span>
             )}
           </Link>
+          <Link className="button" to="/venues">
+            {bg.home.venues}
+          </Link>
           <Link className="button button-ghost" to="/settings">
             {bg.home.settings}
           </Link>

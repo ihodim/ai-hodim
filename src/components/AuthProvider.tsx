@@ -4,10 +4,13 @@ import type { Database } from '../lib/database.types';
 import { AuthContext, type AuthState, type OwnProfile } from '../lib/auth-context';
 
 async function loadOwnProfile(client: SupabaseClient<Database>, userId: string): Promise<OwnProfile | null> {
-  // RLS lets a user read only their own row in Phase 1. Ask for the username only (data minimisation).
-  const { data, error } = await client.from('profiles').select('username').eq('id', userId).maybeSingle();
+  const { data, error } = await client
+    .from('profiles')
+    .select('username, is_admin')
+    .eq('id', userId)
+    .maybeSingle();
   if (error) throw error;
-  return data ? { username: data.username } : null;
+  return data ? { username: data.username, isAdmin: data.is_admin } : null;
 }
 
 export function AuthProvider({

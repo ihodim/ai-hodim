@@ -3,6 +3,8 @@ import type { Session } from '@supabase/supabase-js';
 
 export interface OwnProfile {
   username: string;
+  /** UI gate for the admin screens only. RLS (is_admin()) decides every write. */
+  isAdmin: boolean;
 }
 
 export interface AuthState {

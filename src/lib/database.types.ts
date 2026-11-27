@@ -23,16 +23,42 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "friendships": {
+            "events": {
                   Row: {
-                    "addressee_id": string,"created_at": string,"requester_id": string,"status": Database["public"]['Enums']["friendship_status"],"updated_at": string
+                    "created_at": string,"created_by": string | null,"id": string,"performer": string,"promo": string | null,"starts_at": string,"venue_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "addressee_id": string,"created_at"?: string,"requester_id": string,"status": Database["public"]['Enums']["friendship_status"],"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"performer": string,"promo"?: string | null,"starts_at": string,"venue_id": string
                   }
                   Update: {
-                    "addressee_id"?: string,"created_at"?: string,"requester_id"?: string,"status"?: Database["public"]['Enums']["friendship_status"],"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"performer"?: string,"promo"?: string | null,"starts_at"?: string,"venue_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "events_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "events_venue_id_fkey"
+      columns: ["venue_id"]
+isOneToOne: false
+      referencedRelation: "venues"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"friendships": {
+                  Row: {
+                    "addressee_id": string,"created_at": string,"mutual_block": boolean,"requester_id": string,"status": Database["public"]['Enums']["friendship_status"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "addressee_id": string,"created_at"?: string,"mutual_block"?: boolean,"requester_id": string,"status": Database["public"]['Enums']["friendship_status"],"updated_at"?: string
+                  }
+                  Update: {
+                    "addressee_id"?: string,"created_at"?: string,"mutual_block"?: boolean,"requester_id"?: string,"status"?: Database["public"]['Enums']["friendship_status"],"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -83,6 +109,26 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"venues": {
+                  Row: {
+                    "address": string,"checkin_radius_m": number,"checkin_window_end": string,"checkin_window_start": string,"created_at": string,"created_by": string | null,"id": string,"lat": number,"lng": number,"name": string,"phone": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "address": string,"checkin_radius_m"?: number,"checkin_window_end"?: string,"checkin_window_start"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"lat": number,"lng": number,"name": string,"phone": string
+                  }
+                  Update: {
+                    "address"?: string,"checkin_radius_m"?: number,"checkin_window_end"?: string,"checkin_window_start"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"lat"?: number,"lng"?: number,"name"?: string,"phone"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "venues_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -122,6 +168,9 @@ isOneToOne: true
 { Args: Record<PropertyKey, never>; Returns: {
               "id": string,"username": string
             }[]
+                           },
+"lock_friendship_pair":
+{ Args: { "a": string,"b": string }; Returns: undefined
                            },
 "send_friend_request":
 { Args: { "p_addressee": string }; Returns: undefined

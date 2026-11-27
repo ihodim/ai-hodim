@@ -3,11 +3,19 @@ import { Link } from 'react-router';
 import { bg } from '../i18n/bg';
 
 /** Inner-screen frame: a back link to home and a title. */
-export function Screen({ title, children }: { title: string; children: ReactNode }) {
+export function Screen({
+  title,
+  back = '/',
+  children,
+}: {
+  title: string;
+  back?: string;
+  children: ReactNode;
+}) {
   return (
     <main className="screen">
       <header className="screen-head">
-        <Link className="screen-back" to="/">
+        <Link className="screen-back" to={back}>
           ← {bg.friends.back}
         </Link>
         <h1 className="screen-title">{title}</h1>
