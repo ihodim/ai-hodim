@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapsUrl, parseLocation, telHref, upcomingSince } from './venues';
+import { eventDate, eventStartsAt, mapsUrl, parseLocation, telHref, upcomingSince } from './venues';
 
 const here = { lat: 42.0116, lng: 23.095 };
 
@@ -70,5 +70,20 @@ describe('mapsUrl', () => {
 describe('upcomingSince', () => {
   it('keeps tonight’s events for 6 hours after they start', () => {
     expect(upcomingSince(new Date('2026-12-05T23:00:00Z'))).toBe('2026-12-05T17:00:00.000Z');
+  });
+});
+
+describe('event dates', () => {
+  it('stores a date as 22:00 Sofia time that night', () => {
+    expect(eventStartsAt('2026-12-05')).toBe('2026-12-05T20:00:00.000Z');
+    expect(eventStartsAt('2026-07-10')).toBe('2026-07-10T19:00:00.000Z');
+  });
+  it('reads the Sofia date back for the edit form', () => {
+    expect(eventDate('2026-12-05T20:00:00+00:00')).toBe('2026-12-05');
+    expect(eventDate('2026-12-05T23:30:00Z')).toBe('2026-12-06'); // 01:30 Sofia
+  });
+  it('rejects a missing or invalid date', () => {
+    expect(eventStartsAt('')).toBeNull();
+    expect(eventStartsAt('2026-02-30')).toBeNull();
   });
 });

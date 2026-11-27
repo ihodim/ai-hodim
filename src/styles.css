@@ -702,7 +702,6 @@ textarea.input {
   resize: vertical;
 }
 
-.input[type='time'],
-.input[type='datetime-local'] {
+.input[type='time'] {
   color-scheme: dark;
 }

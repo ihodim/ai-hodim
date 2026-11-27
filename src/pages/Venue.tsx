@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router';
 import { Screen } from '../components/Screen';
 import { bg } from '../i18n/bg';
 import { useAuth } from '../lib/auth-context';
-import { formatEventTime } from '../lib/sofia-time';
+import { formatEventDate } from '../lib/sofia-time';
 import { getClient } from '../lib/supabase';
 import { useLoad } from '../lib/use-load';
 import { getVenue, mapsUrl, telHref } from '../lib/venues';
@@ -59,7 +59,7 @@ export function Venue() {
                 {venue.events.map((e) => (
                   <li key={e.id} className="event">
                     <time className="event-time" dateTime={e.starts_at}>
-                      {formatEventTime(e.starts_at)}
+                      {formatEventDate(e.starts_at)}
                     </time>
                     <span className="person-name">{e.performer}</span>
                     {e.promo && <p className="event-promo">{e.promo}</p>}

@@ -61,11 +61,9 @@ const display = new Intl.DateTimeFormat('bg-BG', {
   weekday: 'short',
   day: 'numeric',
   month: 'long',
-  hour: '2-digit',
-  minute: '2-digit',
 });
 
-/** "сб, 5 декември, 23:00" */
-export function formatEventTime(iso: string): string {
+/** "сб, 5 декември" */
+export function formatEventDate(iso: string): string {
   return display.format(Date.parse(iso));
 }

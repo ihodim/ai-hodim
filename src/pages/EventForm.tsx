@@ -2,10 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Screen } from '../components/Screen';
 import { bg } from '../i18n/bg';
-import { fromSofiaInput, toSofiaInput } from '../lib/sofia-time';
 import { getClient } from '../lib/supabase';
 import { useLoad } from '../lib/use-load';
-import { getEvent, saveEvent, type VenueEvent } from '../lib/venues';
+import { eventDate, eventStartsAt, getEvent, saveEvent, type VenueEvent } from '../lib/venues';
 import { Field } from './VenueForm';
 
 const load = (id: string) => (id ? getEvent(getClient(), id) : Promise.resolve(null));
@@ -36,7 +35,7 @@ function Fields({ event, venueId }: { event: VenueEvent | null; venueId: string 
     if (busy) return;
     const f = new FormData(e.currentTarget);
     const text = (k: string) => String(f.get(k) ?? '').trim();
-    const startsAt = fromSofiaInput(text('starts'));
+    const startsAt = eventStartsAt(text('date'));
     if (!startsAt) return setFailed(true);
 
     setFailed(false);
@@ -59,10 +58,10 @@ function Fields({ event, venueId }: { event: VenueEvent | null; venueId: string 
     <form className="door-form form" onSubmit={submit}>
       <Field label={bg.admin.performer} name="performer" defaultValue={event?.performer} required />
       <Field
-        label={bg.admin.startsAt}
-        name="starts"
-        type="datetime-local"
-        defaultValue={event ? toSofiaInput(event.starts_at) : ''}
+        label={bg.admin.date}
+        name="date"
+        type="date"
+        defaultValue={event ? eventDate(event.starts_at) : ''}
         required
       />
       <div className="field">

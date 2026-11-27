@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
+import { fromSofiaInput, toSofiaInput } from './sofia-time';
 
 // Venues and events. RLS is the authority: members read, admins write. This module only shapes data for the UI.
 
@@ -15,6 +16,19 @@ const UPCOMING_GRACE_HOURS = 6;
 
 export function upcomingSince(now = new Date()): string {
   return new Date(now.getTime() - UPCOMING_GRACE_HOURS * 3600_000).toISOString();
+}
+
+/** Events have a date only. starts_at (timestamptz, required by the contract) stores it at this Sofia time. */
+const EVENT_TIME = '22:00';
+
+/** `YYYY-MM-DD` from <input type="date"> -> starts_at, or null if invalid. */
+export function eventStartsAt(date: string): string | null {
+  return fromSofiaInput(`${date}T${EVENT_TIME}`);
+}
+
+/** starts_at -> its Sofia date as `YYYY-MM-DD`, for prefilling the edit form. */
+export function eventDate(iso: string): string {
+  return toSofiaInput(iso).slice(0, 10);
 }
 
 /** Opens the phone's maps app at the venue (Q22: no embedded map). */
