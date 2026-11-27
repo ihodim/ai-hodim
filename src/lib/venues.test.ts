@@ -1,18 +1,52 @@
 import { describe, expect, it } from 'vitest';
-import { mapsUrl, parseLatLng, telHref, upcomingSince } from './venues';
+import { mapsUrl, parseLocation, telHref, upcomingSince } from './venues';
 
-describe('parseLatLng', () => {
-  it('reads the "lat, lng" text Google Maps copies', () => {
-    expect(parseLatLng('42.01160, 23.09500')).toEqual({ lat: 42.0116, lng: 23.095 });
-    expect(parseLatLng('  42.0116 23.095 ')).toEqual({ lat: 42.0116, lng: 23.095 });
-    expect(parseLatLng('-33.9,-70.6')).toEqual({ lat: -33.9, lng: -70.6 });
+const here = { lat: 42.0116, lng: 23.095 };
+
+describe('parseLocation', () => {
+  it('reads plain "lat, lng" as copied from the Google Maps app', () => {
+    expect(parseLocation('42.01160, 23.09500')).toEqual({ ...here, approximate: false });
+    expect(parseLocation('  42.0116 23.095 ')).toEqual({ ...here, approximate: false });
   });
-  it('rejects out-of-range, swapped-looking or partial input', () => {
-    expect(parseLatLng('90.01, 23')).toBeNull();
-    expect(parseLatLng('42, 180.5')).toBeNull();
-    expect(parseLatLng('42.0116')).toBeNull();
-    expect(parseLatLng('')).toBeNull();
-    expect(parseLatLng('42,0116, 23,095')).toBeNull();
+  it('accepts Bulgarian decimal commas', () => {
+    expect(parseLocation('42,0116, 23,095')).toEqual({ ...here, approximate: false });
+    expect(parseLocation('42,0116,23,095')).toEqual({ ...here, approximate: false });
+  });
+  it('prefers the place pin (!3d!4d) over the map centre (@) in a full link', () => {
+    const url =
+      'https://www.google.com/maps/place/Club/@42.0200,23.0800,17z/data=!3m1!4b1!4m6!3m5!1s0x0:0x1!8m2!3d42.0116!4d23.095!16s';
+    expect(parseLocation(url)).toEqual({ ...here, approximate: false });
+  });
+  it('falls back to the map centre and marks it approximate', () => {
+    expect(parseLocation('https://www.google.com/maps/@42.0116,23.095,17z')).toEqual({
+      ...here,
+      approximate: true,
+    });
+  });
+  it('reads q= / query= coordinates as an exact pin', () => {
+    expect(parseLocation('https://maps.google.com/?q=42.0116,23.095')).toEqual({
+      ...here,
+      approximate: false,
+    });
+    expect(parseLocation('https://www.google.com/maps/search/?api=1&query=42.0116%2C23.095')).toEqual({
+      ...here,
+      approximate: false,
+    });
+  });
+  it('explains short share links instead of guessing', () => {
+    expect(parseLocation('https://maps.app.goo.gl/AbC123xyz')).toEqual({ error: 'short_link' });
+    expect(parseLocation('https://goo.gl/maps/AbC123')).toEqual({ error: 'short_link' });
+  });
+  it('blocks places outside Blagoevgrad, including swapped lat/lng', () => {
+    expect(parseLocation('23.095, 42.0116')).toEqual({ error: 'far' });
+    expect(parseLocation('42.6977, 23.3219')).toEqual({ error: 'far' }); // Sofia
+    expect(parseLocation('42.1, 23.1')).toEqual({ lat: 42.1, lng: 23.1, approximate: false }); // ~9 km out
+  });
+  it('rejects text that has no coordinates', () => {
+    expect(parseLocation('')).toEqual({ error: 'invalid' });
+    expect(parseLocation('42.0116')).toEqual({ error: 'invalid' });
+    expect(parseLocation('ул. Тест 1, Благоевград')).toEqual({ error: 'invalid' });
+    expect(parseLocation('https://www.google.com/maps/place/Club')).toEqual({ error: 'invalid' });
   });
 });
 

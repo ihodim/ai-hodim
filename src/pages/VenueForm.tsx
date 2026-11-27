@@ -4,7 +4,15 @@ import { Screen } from '../components/Screen';
 import { bg } from '../i18n/bg';
 import { getClient } from '../lib/supabase';
 import { useLoad } from '../lib/use-load';
-import { getVenue, parseLatLng, saveVenue, type Venue } from '../lib/venues';
+import {
+  getVenue,
+  GPS_WARN_M,
+  mapsUrl,
+  parseLocation,
+  saveVenue,
+  type ParsedLocation,
+  type Venue,
+} from '../lib/venues';
 
 const load = (id: string) => (id ? getVenue(getClient(), id) : Promise.resolve(null));
 
@@ -27,31 +35,32 @@ export function VenueForm() {
 function Fields({ venue }: { venue: Venue | null }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<'coords' | 'save' | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [where, setWhere] = useState(venue ? `${venue.lat}, ${venue.lng}` : '');
+  const location = parseLocation(where);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy) return;
+    if (busy || 'error' in location) return;
     const f = new FormData(e.currentTarget);
     const text = (k: string) => String(f.get(k) ?? '').trim();
-    const point = parseLatLng(text('coords'));
-    if (!point) return setError('coords');
 
-    setError(null);
+    setFailed(false);
     setBusy(true);
     try {
       const id = await saveVenue(getClient(), venue?.id ?? null, {
         name: text('name'),
         address: text('address'),
         phone: text('phone'),
-        ...point,
+        lat: location.lat,
+        lng: location.lng,
         checkin_radius_m: Number(text('radius')),
         checkin_window_start: text('start'),
         checkin_window_end: text('end'),
       });
       navigate(`/venues/${id}`, { replace: true });
     } catch {
-      setError('save');
+      setFailed(true);
       setBusy(false);
     }
   }
@@ -64,30 +73,7 @@ function Fields({ venue }: { venue: Venue | null }) {
       <Field label={bg.admin.name} name="name" defaultValue={venue?.name} required />
       <Field label={bg.admin.address} name="address" defaultValue={venue?.address} required />
       <Field label={bg.admin.phone} name="phone" type="tel" defaultValue={venue?.phone} required />
-
-      <div className="field">
-        <label className="field-label" htmlFor="coords">
-          {bg.admin.coords}
-        </label>
-        <input
-          id="coords"
-          name="coords"
-          className="input"
-          inputMode="decimal"
-          autoComplete="off"
-          required
-          defaultValue={venue ? `${venue.lat}, ${venue.lng}` : ''}
-          aria-invalid={error === 'coords'}
-          aria-describedby="coords-hint"
-        />
-        <p
-          id="coords-hint"
-          className={error === 'coords' ? 'field-error' : 'field-hint'}
-          role={error === 'coords' ? 'alert' : undefined}
-        >
-          {error === 'coords' ? bg.admin.coordsInvalid : bg.admin.coordsHint}
-        </p>
-      </div>
+      <LocationField value={where} onChange={setWhere} location={location} />
 
       <Field
         label={bg.admin.radius}
@@ -116,15 +102,99 @@ function Fields({ venue }: { venue: Venue | null }) {
       </div>
       <p className="field-hint">{bg.admin.windowHint}</p>
 
-      {error === 'save' && (
+      {failed && (
         <p className="field-error" role="alert">
           {bg.admin.saveFailed}
         </p>
       )}
-      <button type="submit" className="button button-wide" disabled={busy}>
+      <button type="submit" className="button button-wide" disabled={busy || 'error' in location}>
         {busy ? bg.admin.saving : bg.admin.save}
       </button>
     </form>
+  );
+}
+
+type Gps = { state: 'idle' | 'busy' | 'denied' | 'failed' } | { state: 'done'; accuracy: number };
+
+/** Where the venue is: the phone's GPS (standing at the club) or a pasted Google Maps link / "lat, lng".
+ *  Every result is shown with a map link to check before saving. */
+function LocationField({
+  value,
+  onChange,
+  location,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  location: ParsedLocation;
+}) {
+  const [gps, setGps] = useState<Gps>({ state: 'idle' });
+
+  function locate() {
+    setGps({ state: 'busy' });
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        onChange(`${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
+        setGps({ state: 'done', accuracy: Math.round(pos.coords.accuracy) });
+      },
+      (err) => setGps({ state: err.code === err.PERMISSION_DENIED ? 'denied' : 'failed' }),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+    );
+  }
+
+  const empty = value.trim() === '';
+  const found = 'error' in location ? null : location;
+
+  return (
+    <div className="field">
+      <label className="field-label" htmlFor="where">
+        {bg.admin.location}
+      </label>
+      {'geolocation' in navigator && (
+        <button
+          type="button"
+          className="button button-ghost"
+          disabled={gps.state === 'busy'}
+          onClick={locate}
+        >
+          {gps.state === 'busy' ? bg.admin.gpsBusy : bg.admin.useMyLocation}
+        </button>
+      )}
+      <input
+        id="where"
+        className="input"
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        placeholder={bg.admin.locationPlaceholder}
+        value={value}
+        aria-invalid={!empty && !found}
+        aria-describedby="where-note"
+        onChange={(e) => {
+          onChange(e.target.value);
+          setGps({ state: 'idle' });
+        }}
+      />
+      <div id="where-note" aria-live="polite">
+        {gps.state === 'denied' && <p className="field-error">{bg.admin.gpsDenied}</p>}
+        {gps.state === 'failed' && <p className="field-error">{bg.admin.gpsFailed}</p>}
+        {found && (
+          <p className="field-hint">
+            {bg.admin.found} {found.lat.toFixed(5)}, {found.lng.toFixed(5)} ·{' '}
+            <a href={mapsUrl(found.lat, found.lng)} target="_blank" rel="noopener noreferrer">
+              {bg.admin.checkOnMap}
+            </a>
+          </p>
+        )}
+        {found && gps.state === 'done' && gps.accuracy > GPS_WARN_M && (
+          <p className="field-error">{bg.admin.gpsInaccurate(gps.accuracy)}</p>
+        )}
+        {found?.approximate && <p className="field-error">{bg.admin.approximate}</p>}
+        {empty && <p className="field-hint">{bg.admin.locationHint}</p>}
+        {!empty && 'error' in location && (
+          <p className="field-error">{bg.admin.locationErrors[location.error]}</p>
+        )}
+      </div>
+    </div>
   );
 }
 

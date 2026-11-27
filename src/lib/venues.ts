@@ -27,13 +27,48 @@ export function telHref(phone: string): string | null {
   return /\d/.test(digits) ? `tel:${digits}` : null;
 }
 
-/** Reads "42.0116, 23.0950" (what Google Maps copies) or "42.0116 23.0950". Null if invalid or out of range. */
-export function parseLatLng(text: string): { lat: number; lng: number } | null {
-  const m = /^\s*(-?\d+(?:\.\d+)?)\s*(?:,\s*|\s+)(-?\d+(?:\.\d+)?)\s*$/.exec(text);
-  if (!m) return null;
-  const lat = Number(m[1]);
-  const lng = Number(m[2]);
-  return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
+/** Launch city. A venue further than MAX_KM from here is almost certainly a bad paste or swapped lat/lng. */
+const CITY = { lat: 42.0209, lng: 23.0943 };
+const MAX_KM = 15;
+
+/** GPS fixes worse than this get a warning: check-in later uses a ~100 m radius. */
+export const GPS_WARN_M = 50;
+
+export type ParsedLocation =
+  { lat: number; lng: number; approximate: boolean } | { error: 'invalid' | 'short_link' | 'far' };
+
+const NUM = String.raw`(-?\d{1,3}[.,]\d+)`;
+/** [pattern, approximate], in order of preference. */
+const LOCATION_PATTERNS: [RegExp, boolean][] = [
+  [/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, false],
+  [/[?&](?:q|query|ll)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i, false],
+  [/@(-?\d+\.\d+),(-?\d+\.\d+)/, true],
+  [new RegExp(String.raw`^${NUM}[\s,;]+${NUM}$`), false],
+];
+
+/** Reads a venue location from what an admin pastes: "lat, lng" (dot or Bulgarian decimal comma) or a full
+ *  Google Maps link. A link's !3d!4d is the place's pin; its @lat,lng is only the map centre (approximate). */
+export function parseLocation(text: string): ParsedLocation {
+  const t = text.trim();
+  // Short share links hold no coordinates and resolve in client-side JS, so they can't be read here.
+  if (/^(https?:\/\/)?(maps\.app\.goo\.gl|goo\.gl\/maps)\//i.test(t)) return { error: 'short_link' };
+
+  for (const [pattern, approximate] of LOCATION_PATTERNS) {
+    const m = pattern.exec(t);
+    if (!m) continue;
+    const lat = Number(m[1]?.replace(',', '.'));
+    const lng = Number(m[2]?.replace(',', '.'));
+    return distanceKm({ lat, lng }, CITY) <= MAX_KM ? { lat, lng, approximate } : { error: 'far' };
+  }
+  return { error: 'invalid' };
+}
+
+function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLng = (b.lng - a.lng) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
 }
 
 // ---- data access --------------------------------------------------------------------------------------------------
